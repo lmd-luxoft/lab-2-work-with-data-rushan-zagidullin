@@ -40,7 +40,26 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuyStrategy\BuyAuto.cs" />
+    <Compile Include="BuyStrategy\BuyBank.cs" />
+    <Compile Include="BuyStrategy\BuyClother.cs" />
+    <Compile Include="BuyStrategy\BuyFood.cs" />
+    <Compile Include="BuyStrategy\BuyPrison.cs" />
+    <Compile Include="BuyStrategy\BuyTravel.cs" />
+    <Compile Include="BuyStrategy\IBuyStrategy.cs" />
+    <Compile Include="BuyStrategy\StateBuyer.cs" />
+    <Compile Include="Models\Field.cs" />
+    <Compile Include="Models\Player.cs" />
+    <Compile Include="Models\Type.cs" />
     <Compile Include="Monopoly.cs" />
+    <Compile Include="RentaStrategy\IRentaStrategy.cs" />
+    <Compile Include="RentaStrategy\RentaAuto.cs" />
+    <Compile Include="RentaStrategy\RentaBank.cs" />
+    <Compile Include="RentaStrategy\RentaClother.cs" />
+    <Compile Include="RentaStrategy\RentaFood.cs" />
+    <Compile Include="RentaStrategy\RentaPrison.cs" />
+    <Compile Include="RentaStrategy\RentaTravel.cs" />
+    <Compile Include="RentaStrategy\StateRenta.cs" />
     <Compile Include="TestClass.cs" />
   </ItemGroup>
   <ItemGroup>

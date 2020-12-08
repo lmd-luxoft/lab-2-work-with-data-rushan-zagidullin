@@ -3,147 +3,89 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Monopoly.BuyStrategy;
+using Monopoly.Models;
+using Monopoly.RentaStrategy;
+using Type = Monopoly.Models.Type;
 
 namespace Monopoly
 {
     class Monopoly
     {
-        public List<Tuple<string, int>> players = new List<Tuple<string, int>>();
-        public List<Tuple<string, Monopoly.Type, int, bool>> fields = new List<Tuple<string, Type, int, bool>>();
-        public Monopoly(string[] p, int v)
+        private static readonly int DEFAULT_BALANCE = 6000;  
+        private readonly List<Player> _players;
+        private List<Field> _fields = new List<Field>();
+        
+        public Monopoly(string[] players)
         {
-            for (int i = 0; i < v; i++)
-            {
-                players.Add(new Tuple<string,int>(p[i], 6000));     
-            }
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Ford", Monopoly.Type.AUTO, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("MCDonald", Monopoly.Type.FOOD, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Lamoda", Monopoly.Type.CLOTHER, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Air Baltic", Monopoly.Type.TRAVEL, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Nordavia", Monopoly.Type.TRAVEL, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Prison", Monopoly.Type.PRISON, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("MCDonald", Monopoly.Type.FOOD, 0, false));
-            fields.Add(new Tuple<string, Monopoly.Type, int, bool>("TESLA", Monopoly.Type.AUTO, 0, false));
+            _players = players.Select(name => new Player(name, DEFAULT_BALANCE))
+                .ToList();
+            _fields.Add(new Field("Ford", Type.AUTO));
+            _fields.Add(new Field("MCDonald", Type.FOOD));
+            _fields.Add(new Field("Lamoda", Type.CLOTHER));
+            _fields.Add(new Field("Air Baltic", Type.TRAVEL));
+            _fields.Add(new Field("Nordavia", Type.TRAVEL));
+            _fields.Add(new Field("Prison", Type.PRISON));
+            _fields.Add(new Field("MCDonald", Type.FOOD));
+            _fields.Add(new Field("TESLA", Type.AUTO));
         }
 
-        internal List<Tuple<string, int>> GetPlayersList()
+        internal List<Player> GetPlayersList()
         {
-            return players;
+            return _players.Select(CopyPlayer).ToList();
         }
 
-        internal enum Type
+        internal List<Field> GetFieldsList()
         {
-            AUTO,
-            FOOD,
-            CLOTHER,
-            TRAVEL,
-            PRISON,
-            BANK
+            return _fields.Select(CopyField).ToList();
         }
 
-        internal List<Tuple<string, Monopoly.Type, int, bool>> GetFieldsList()
+        internal Field GetFieldByName(string v)
         {
-            return fields;
+            return (from p in _fields where p.Name == v select p).FirstOrDefault();
         }
 
-        internal Tuple<string, Type, int, bool> GetFieldByName(string v)
+        internal bool Buy(int playerIndex, Field field)
         {
-            return (from p in fields where p.Item1 == v select p).FirstOrDefault();
+            field = _fields.First(x => x.Name == field.Name);
+            var player = GetPlayerInfoInternal(playerIndex);
+            StateBuyer stateBuyer = new StateBuyer();
+            stateBuyer.Buy(field, player);
+            return field.Player != null
+                   && field.Player.Equals(player);
         }
 
-        internal bool Buy(int v, Tuple<string, Type, int, bool> k)
+        public Player GetPlayerInfo(int playerIndex)
         {
-            var x = GetPlayerInfo(v);
-            int cash = 0;
-            switch(k.Item2)
-            {
-                case Type.AUTO:
-                    if (k.Item3 != 0)
-                        return false;
-                    cash = x.Item2 - 500;
-                    players[v - 1] = new Tuple<string, int>(x.Item1, cash);
-                    break;
-                case Type.FOOD:
-                    if (k.Item3 != 0)
-                        return false;
-                    cash = x.Item2 - 250;
-                    players[v - 1] = new Tuple<string, int>(x.Item1, cash);
-                    break;
-                case Type.TRAVEL:
-                    if (k.Item3 != 0)
-                        return false;
-                    cash = x.Item2 - 700;
-                    players[v - 1] = new Tuple<string, int>(x.Item1, cash);
-                    break;
-                case Type.CLOTHER:
-                    if (k.Item3 != 0)
-                        return false;
-                    cash = x.Item2 - 100;
-                    players[v - 1] = new Tuple<string, int>(x.Item1, cash);
-                    break;
-                default:
-                    return false;
-            }
-            int i = players.Select((item, index) => new { name = item.Item1, index = index })
-                .Where(n => n.name == x.Item1)
-                .Select(p => p.index).FirstOrDefault();
-            fields[i] = new Tuple<string, Type, int, bool>(k.Item1, k.Item2, v, k.Item4);
-             return true;
+            return CopyPlayer(GetPlayerInfoInternal(playerIndex));
         }
 
-        internal Tuple<string, int> GetPlayerInfo(int v)
+        private Player CopyPlayer(Player player)
         {
-            return players[v - 1];
+            return new Player(player.Name, player.Balance);
         }
 
-        internal bool Renta(int v, Tuple<string, Type, int, bool> k)
+        private Field CopyField(Field field)
         {
-            var z = GetPlayerInfo(v);
-            Tuple<string, int> o = null;
-            switch(k.Item2)
-            {
-                case Type.AUTO:
-                    if (k.Item3 == 0)
-                        return false;
-                    o =  GetPlayerInfo(k.Item3);
-                    z = new Tuple<string, int>(z.Item1, z.Item2 - 250);
-                    o = new Tuple<string, int>(o.Item1,o.Item2 + 250);
-                    break;
-                case Type.FOOD:
-                    if (k.Item3 == 0)
-                        return false;
-                    o = GetPlayerInfo(k.Item3);
-                    z = new Tuple<string, int>(z.Item1, z.Item2 - 250);
-                    o = new Tuple<string, int>(o.Item1, o.Item2 + 250);
+            Player player = field.Player != null
+                ? CopyPlayer(field.Player)
+                : null;
+            return new Field(field.Name, field.Type, player);
+        }
 
-                    break;
-                case Type.TRAVEL:
-                    if (k.Item3 == 0)
-                        return false;
-                    o = GetPlayerInfo(k.Item3);
-                    z = new Tuple<string, int>(z.Item1, z.Item2 - 300);
-                    o = new Tuple<string, int>(o.Item1, o.Item2 + 300);
-                    break;
-                case Type.CLOTHER:
-                    if (k.Item3 == 0)
-                        return false;
-                    o = GetPlayerInfo(k.Item3);
-                    z = new Tuple<string, int>(z.Item1, z.Item2 - 100);
-                    o = new Tuple<string, int>(o.Item1, o.Item2 + 1000);
+        private Player GetPlayerInfoInternal(int playerIndex)
+        {
+            return _players[playerIndex - 1];
+        }
 
-                    break;
-                case Type.PRISON:
-                    z = new Tuple<string, int>(z.Item1, z.Item2 - 1000);
-                    break;
-                case Type.BANK:
-                    z = new Tuple<string, int>(z.Item1, z.Item2 - 700);
-                    break;
-                default:
-                    return false;
-            }
-            players[v - 1] = z;
-            if(o != null)
-                players[k.Item3 - 1] = o;
+        internal bool Renta(int playerIndex, Field field)
+        {
+            field = _fields.First(x => x.Name == field.Name);
+            if (field.Player == null)
+                return false;
+            var player = GetPlayerInfoInternal(playerIndex);
+            StateRenta stateRenta = new StateRenta();
+            stateRenta.Renta(field, player);
             return true;
         }
     }
