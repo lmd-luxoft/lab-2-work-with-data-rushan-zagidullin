@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Monopoly.BuyStrategy;
 using Monopoly.Models;
+using Monopoly.RentaStrategy;
 using Type = Monopoly.Models.Type;
 
 namespace Monopoly
@@ -45,37 +47,12 @@ namespace Monopoly
 
         internal bool Buy(int playerIndex, Field field)
         {
+            field = _fields.First(x => x.Name == field.Name);
             var player = GetPlayerInfoInternal(playerIndex);
-            switch(field.Type)
-            {
-                case Type.AUTO:
-                    if (field.Player != null)
-                        return false;
-                    player.Balance -= 500;
-                    break;
-                case Type.FOOD:
-                    if (field.Player != null)
-                        return false;
-                    player.Balance -= 250;
-                    break;
-                case Type.TRAVEL:
-                    if (field.Player != null)
-                        return false;
-                    player.Balance -= 700;
-                    break;
-                case Type.CLOTHER:
-                    if (field.Player != null)
-                        return false;
-                    player.Balance -= 100;
-                    break;
-                default:
-                    return false;
-            }
-            int i = _fields.Select((item, index) => new { name = item.Name, index = index })
-                .Where(n => n.name == player.Name)
-                .Select(p => p.index).FirstOrDefault();
-            _fields[i].Player = player;
-             return true;
+            StateBuyer stateBuyer = new StateBuyer();
+            stateBuyer.Buy(field, player);
+            return field.Player != null
+                   && field.Player.Equals(player);
         }
 
         public Player GetPlayerInfo(int playerIndex)
@@ -101,46 +78,14 @@ namespace Monopoly
             return _players[playerIndex - 1];
         }
 
-        internal bool Renta(int playerIndex, Field k)
+        internal bool Renta(int playerIndex, Field field)
         {
-            Player player = GetPlayerInfoInternal(playerIndex);
-            switch(k.Type)
-            {
-                case Type.AUTO:
-                    if (k.Player == null)
-                        return false;
-                    player.Balance -= 250;
-                    k.Player.Balance += 250;
-                    break;
-                case Type.FOOD:
-                    if (k.Player == null)
-                        return false;
-                    player.Balance -= 250;
-                    k.Player.Balance += 250;
-
-                    break;
-                case Type.TRAVEL:
-                    if (k.Player == null)
-                        return false;
-                    player.Balance -= 300;
-                    k.Player.Balance += 300;
-                    break;
-                case Type.CLOTHER:
-                    if (k.Player == null)
-                        return false;
-                    player.Balance -= 100;
-                    k.Player.Balance += 100;
-
-                    break;
-                case Type.PRISON:
-                    player.Balance -= 1000;
-                    break;
-                case Type.BANK:
-                    player.Balance -= 700;
-                    break;
-                default:
-                    return false;
-            }
+            field = _fields.First(x => x.Name == field.Name);
+            if (field.Player == null)
+                return false;
+            var player = GetPlayerInfoInternal(playerIndex);
+            StateRenta stateRenta = new StateRenta();
+            stateRenta.Renta(field, player);
             return true;
         }
     }
