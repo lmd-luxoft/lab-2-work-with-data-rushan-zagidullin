@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Monopoly.Models;
+using Type = Monopoly.Models.Type;
 
 namespace Monopoly
 {
@@ -11,20 +12,20 @@ namespace Monopoly
     {
         private static readonly int DEFAULT_BALANCE = 6000;  
         private readonly List<Player> _players;
-        private List<Tuple<string, Type, int, bool>> _fields = new List<Tuple<string, Type, int, bool>>();
+        private List<Field> _fields = new List<Field>();
         
         public Monopoly(string[] players)
         {
             _players = players.Select(name => new Player(name, DEFAULT_BALANCE))
                 .ToList();
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Ford", Monopoly.Type.AUTO, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("MCDonald", Monopoly.Type.FOOD, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Lamoda", Monopoly.Type.CLOTHER, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Air Baltic", Monopoly.Type.TRAVEL, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Nordavia", Monopoly.Type.TRAVEL, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("Prison", Monopoly.Type.PRISON, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("MCDonald", Monopoly.Type.FOOD, 0, false));
-            _fields.Add(new Tuple<string, Monopoly.Type, int, bool>("TESLA", Monopoly.Type.AUTO, 0, false));
+            _fields.Add(new Field("Ford", Type.AUTO));
+            _fields.Add(new Field("MCDonald", Type.FOOD));
+            _fields.Add(new Field("Lamoda", Type.CLOTHER));
+            _fields.Add(new Field("Air Baltic", Type.TRAVEL));
+            _fields.Add(new Field("Nordavia", Type.TRAVEL));
+            _fields.Add(new Field("Prison", Type.PRISON));
+            _fields.Add(new Field("MCDonald", Type.FOOD));
+            _fields.Add(new Field("TESLA", Type.AUTO));
         }
 
         internal List<Player> GetPlayersList()
@@ -32,63 +33,48 @@ namespace Monopoly
             return _players.Select(CopyPlayer).ToList();
         }
 
-        internal enum Type
+        internal List<Field> GetFieldsList()
         {
-            AUTO,
-            FOOD,
-            CLOTHER,
-            TRAVEL,
-            PRISON,
-            BANK
+            return _fields.Select(CopyField).ToList();
         }
 
-        internal List<Tuple<string, Monopoly.Type, int, bool>> GetFieldsList()
+        internal Field GetFieldByName(string v)
         {
-            return _fields;
+            return (from p in _fields where p.Name == v select p).FirstOrDefault();
         }
 
-        internal Tuple<string, Type, int, bool> GetFieldByName(string v)
+        internal bool Buy(int playerIndex, Field field)
         {
-            return (from p in _fields where p.Item1 == v select p).FirstOrDefault();
-        }
-
-        internal bool Buy(int playerIndex, Tuple<string, Type, int, bool> field)
-        {
-            var x = GetPlayerInfoInternal(playerIndex);
-            int cash = 0;
-            switch(field.Item2)
+            var player = GetPlayerInfoInternal(playerIndex);
+            switch(field.Type)
             {
                 case Type.AUTO:
-                    if (field.Item3 != 0)
+                    if (field.Player != null)
                         return false;
-                    cash = x.Balance - 500;
-                    _players[playerIndex - 1] = new Player(x.Name, cash);
+                    player.Balance -= 500;
                     break;
                 case Type.FOOD:
-                    if (field.Item3 != 0)
+                    if (field.Player != null)
                         return false;
-                    cash = x.Balance - 250;
-                    _players[playerIndex - 1] = new Player(x.Name, cash);
+                    player.Balance -= 250;
                     break;
                 case Type.TRAVEL:
-                    if (field.Item3 != 0)
+                    if (field.Player != null)
                         return false;
-                    cash = x.Balance - 700;
-                    _players[playerIndex - 1] = new Player(x.Name, cash);
+                    player.Balance -= 700;
                     break;
                 case Type.CLOTHER:
-                    if (field.Item3 != 0)
+                    if (field.Player != null)
                         return false;
-                    cash = x.Balance - 100;
-                    _players[playerIndex - 1] = new Player(x.Name, cash);
+                    player.Balance -= 100;
                     break;
                 default:
                     return false;
             }
-            int i = _players.Select((item, index) => new { name = item.Name, index = index })
-                .Where(n => n.name == x.Name)
+            int i = _fields.Select((item, index) => new { name = item.Name, index = index })
+                .Where(n => n.name == player.Name)
                 .Select(p => p.index).FirstOrDefault();
-            _fields[i] = new Tuple<string, Type, int, bool>(field.Item1, field.Item2, playerIndex, field.Item4);
+            _fields[i].Player = player;
              return true;
         }
 
@@ -102,45 +88,48 @@ namespace Monopoly
             return new Player(player.Name, player.Balance);
         }
 
+        private Field CopyField(Field field)
+        {
+            Player player = field.Player != null
+                ? CopyPlayer(field.Player)
+                : null;
+            return new Field(field.Name, field.Type, player);
+        }
+
         private Player GetPlayerInfoInternal(int playerIndex)
         {
             return _players[playerIndex - 1];
         }
 
-        internal bool Renta(int playerIndex, Tuple<string, Type, int, bool> k)
+        internal bool Renta(int playerIndex, Field k)
         {
             Player player = GetPlayerInfoInternal(playerIndex);
-            Player fieldOwner;
-            switch(k.Item2)
+            switch(k.Type)
             {
                 case Type.AUTO:
-                    if (k.Item3 == 0)
+                    if (k.Player == null)
                         return false;
-                    fieldOwner =  GetPlayerInfoInternal(k.Item3);
                     player.Balance -= 250;
-                    fieldOwner.Balance += 250;
+                    k.Player.Balance += 250;
                     break;
                 case Type.FOOD:
-                    if (k.Item3 == 0)
+                    if (k.Player == null)
                         return false;
-                    fieldOwner = GetPlayerInfoInternal(k.Item3);
                     player.Balance -= 250;
-                    fieldOwner.Balance += 250;
+                    k.Player.Balance += 250;
 
                     break;
                 case Type.TRAVEL:
-                    if (k.Item3 == 0)
+                    if (k.Player == null)
                         return false;
-                    fieldOwner = GetPlayerInfoInternal(k.Item3);
                     player.Balance -= 300;
-                    fieldOwner.Balance += 300;
+                    k.Player.Balance += 300;
                     break;
                 case Type.CLOTHER:
-                    if (k.Item3 == 0)
+                    if (k.Player == null)
                         return false;
-                    fieldOwner = GetPlayerInfoInternal(k.Item3);
                     player.Balance -= 100;
-                    fieldOwner.Balance += 100;
+                    k.Player.Balance += 100;
 
                     break;
                 case Type.PRISON:
